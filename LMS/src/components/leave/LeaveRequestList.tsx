@@ -4,8 +4,23 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { X, Check, AlertCircle } from "lucide-react";
 
 interface LeaveRequestListProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+interface LeaveRequest {
+  id: number;
+  user_id: number;
+  leave_type_id: number;
+  leave_type?: string;
+  full_name?: string;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  created_at?: string;
+  updated_at?: string;
+}
 
 export function LeaveRequestList({
   className,
@@ -17,6 +32,9 @@ export function LeaveRequestList({
   const { showToast } = useToast();
   const [filter, setFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(
+    null
+  );
 
   useEffect(() => {
     fetchLeaveRequests();
@@ -27,6 +45,7 @@ export function LeaveRequestList({
       setIsLoading(true);
       await updateRequest(id, status);
       showToast("Success", `Leave request ${status} successfully`);
+      setSelectedRequest(null); // Close dialog after action
     } catch (error) {
       showToast("Error", "Failed to update leave request status");
     } finally {
@@ -39,6 +58,7 @@ export function LeaveRequestList({
       setIsLoading(true);
       await deleteRequest(id);
       showToast("Success", "Leave request deleted successfully");
+      setSelectedRequest(null); // Close dialog after action
     } catch (error) {
       showToast("Error", "Failed to delete leave request");
     } finally {
@@ -46,10 +66,19 @@ export function LeaveRequestList({
     }
   };
 
-  const filteredRequests = leaveRequests.filter((request) => {
-    if (filter === "all") return true;
-    return request.status === filter;
-  });
+  const filteredRequests = leaveRequests
+    .map((request) => ({
+      ...request,
+      id: request.id!,
+      leave_type_id: request.leave_type_id,
+      leave_type: request.leave_type || "Unknown Type",
+      full_name: request.full_name || "Unknown User",
+    }))
+    .filter((request) => {
+      if (filter === "all") return true;
+      return request.status === filter;
+    });
+  console.log(state.user, "state.user");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -104,47 +133,21 @@ export function LeaveRequestList({
                     </span>
                   </div>
                   <div className="text-sm text-white/60">
-                    {format(new Date(request.start_date), "MMM d, yyyy")} -{" "}
+                    <span className="text-primary">By {request.full_name}</span>{" "}
+                    • {format(new Date(request.start_date), "MMM d, yyyy")} -{" "}
                     {format(new Date(request.end_date), "MMM d, yyyy")}
                   </div>
                   <p className="text-white/80">{request.reason}</p>
                 </div>
 
-                {(state.user?.role === "admin" || state.user?.role === "hod") &&
-                  request.status === "pending" && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          handleStatusUpdate(request.id!, "approved")
-                        }
-                        disabled={isLoading}
-                        className="px-4 py-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors duration-300"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleStatusUpdate(request.id!, "rejected")
-                        }
-                        disabled={isLoading}
-                        className="px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors duration-300"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-
-                {((state.user?.id === request.user_id &&
-                  request.status === "pending") ||
-                  state.user?.role === "admin") && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleDelete(request.id!)}
-                    disabled={isLoading}
+                    onClick={() => setSelectedRequest(request)}
                     className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors duration-300"
                   >
-                    Delete
+                    View Details
                   </button>
-                )}
+                </div>
               </div>
             </div>
           ))}
@@ -156,6 +159,105 @@ export function LeaveRequestList({
           )}
         </div>
       </div>
+
+      {/* Leave Request Details Dialog */}
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-accent rounded-lg border border-white/20 p-6 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white">
+                Leave Request Details
+              </h3>
+              <button
+                onClick={() => setSelectedRequest(null)}
+                className="text-white/60 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-white/60">Requested By</label>
+                <p className="text-white font-medium">
+                  {selectedRequest.full_name}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-white/60">Leave Type</label>
+                <p className="text-white">{selectedRequest.leave_type}</p>
+              </div>
+              <div>
+                <label className="text-sm text-white/60">Duration</label>
+                <p className="text-white">
+                  {format(new Date(selectedRequest.start_date), "MMM d, yyyy")}{" "}
+                  - {format(new Date(selectedRequest.end_date), "MMM d, yyyy")}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-white/60">Status</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={cn(
+                      "px-2 py-1 text-xs font-medium rounded-full border",
+                      getStatusColor(selectedRequest.status)
+                    )}
+                  >
+                    {selectedRequest.status.charAt(0).toUpperCase() +
+                      selectedRequest.status.slice(1)}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-white/60">Reason</label>
+                <p className="text-white">{selectedRequest.reason}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-white/10">
+                {(state.user?.role === "admin" || state.user?.role === "hod") &&
+                  selectedRequest.status === "pending" && (
+                    <>
+                      <button
+                        onClick={() =>
+                          handleStatusUpdate(selectedRequest.id, "approved")
+                        }
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors duration-300"
+                      >
+                        <Check size={18} />
+                        <span>Approve</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleStatusUpdate(selectedRequest.id, "rejected")
+                        }
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors duration-300"
+                      >
+                        <X size={18} />
+                        <span>Reject</span>
+                      </button>
+                    </>
+                  )}
+
+                {((state.user?.id === selectedRequest.user_id &&
+                  selectedRequest.status === "pending") ||
+                  state.user?.role === "admin") && (
+                  <button
+                    onClick={() => handleDelete(selectedRequest.id)}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors duration-300"
+                  >
+                    <X size={18} />
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

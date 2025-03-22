@@ -12,8 +12,9 @@ interface LeaveType {
 interface LeaveRequest {
   id?: number;
   user_id: number;
-  type_id: number;
+  leave_type_id: number;
   leave_type?: string;
+  full_name?: string;
   start_date: string;
   end_date: string;
   reason: string;
@@ -25,7 +26,7 @@ interface LeaveRequest {
 interface LeaveBalance {
   id: number;
   user_id: number;
-  type_id: number;
+  leave_type_id: number;
   leave_type?: string;
   days_remaining: number;
   default_days: number;
@@ -126,7 +127,7 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       await api.post("/request", {
-        type_id: data.typeId,
+        leave_type_id: data.typeId,
         start_date: data.startDate,
         end_date: data.endDate,
         reason: data.reason,

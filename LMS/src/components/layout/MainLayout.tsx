@@ -36,6 +36,11 @@ export function MainLayout() {
       icon: Clock,
       path: "/history",
     },
+    {
+      title: "Leave",
+      icon: Calendar,
+      path: "/leave",
+    },
   ];
 
   return (

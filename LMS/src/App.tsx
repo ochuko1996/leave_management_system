@@ -8,7 +8,7 @@ import { SettingsPage } from "@/pages/settings";
 import { LoginPage } from "@/pages/auth/login";
 import { RegisterPage } from "@/pages/auth/register";
 import { useAuth } from "@/context/AuthContext";
-
+import { LeavePage } from "@/pages/leave";
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
   if (!state.isAuthenticated) {
@@ -34,6 +34,7 @@ function App() {
         <Route path="/requests" element={<RequestsPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/leave" element={<LeavePage />} />
       </Route>
     </Routes>
   );
