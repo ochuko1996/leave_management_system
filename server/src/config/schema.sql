@@ -6,8 +6,7 @@ USE citi_lms;
 CREATE TABLE IF NOT EXISTS users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   staff_id VARCHAR(50) UNIQUE NOT NULL,
-  first_name VARCHAR(50) NOT NULL,
-  last_name VARCHAR(50) NOT NULL,
+  full_name VARCHAR(50) NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   department VARCHAR(100) NOT NULL,
@@ -29,7 +28,7 @@ CREATE TABLE IF NOT EXISTS leave_types (
 CREATE TABLE IF NOT EXISTS leave_requests (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
-  leave_type_id INT NOT NULL,
+  type_id INT NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   reason TEXT NOT NULL,
@@ -39,7 +38,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (leave_type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
+  FOREIGN KEY (type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
   FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -47,7 +46,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
 CREATE TABLE IF NOT EXISTS leave_balances (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
-  leave_type_id INT NOT NULL,
+  type_id INT NOT NULL,
   year INT NOT NULL,
   total_days INT NOT NULL,
   used_days INT NOT NULL DEFAULT 0,
@@ -55,8 +54,8 @@ CREATE TABLE IF NOT EXISTS leave_balances (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (leave_type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
-  UNIQUE KEY unique_balance (user_id, leave_type_id, year)
+  FOREIGN KEY (type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_balance (user_id, type_id, year)
 );
 
 -- Insert default leave types

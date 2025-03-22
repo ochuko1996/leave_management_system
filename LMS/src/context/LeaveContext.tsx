@@ -1,162 +1,191 @@
-import { createContext, useContext, useReducer, ReactNode } from "react";
-import { LeaveState, LeaveRequest, LeaveBalance } from "@/types";
-import { leaveAPI } from "@/services/api";
+import React, { createContext, useContext, useState } from "react";
+import axios from "axios";
+import { useAuth } from "./AuthContext";
 
-// Define action types
-type LeaveAction =
-  | { type: "FETCH_START" }
-  | { type: "FETCH_ERROR"; payload: string }
-  | { type: "SET_REQUESTS"; payload: LeaveRequest[] }
-  | { type: "SET_HISTORY"; payload: LeaveRequest[] }
-  | { type: "SET_BALANCES"; payload: LeaveBalance[] }
-  | { type: "ADD_REQUEST"; payload: LeaveRequest }
-  | { type: "UPDATE_REQUEST"; payload: LeaveRequest }
-  | { type: "CANCEL_REQUEST"; payload: number };
-
-// Initial state
-const initialState: LeaveState = {
-  requests: [],
-  history: [],
-  balances: [],
-  isLoading: false,
-  error: null,
-};
-
-// Create context
-const LeaveContext = createContext<{
-  state: LeaveState;
-  fetchRequests: () => Promise<void>;
-  fetchHistory: () => Promise<void>;
-  fetchBalances: () => Promise<void>;
-  submitRequest: (leaveData: any) => Promise<void>;
-  updateRequest: (id: number, data: any) => Promise<void>;
-  cancelRequest: (id: number) => Promise<void>;
-} | null>(null);
-
-// Reducer function
-function leaveReducer(state: LeaveState, action: LeaveAction): LeaveState {
-  switch (action.type) {
-    case "FETCH_START":
-      return { ...state, isLoading: true, error: null };
-    case "FETCH_ERROR":
-      return { ...state, isLoading: false, error: action.payload };
-    case "SET_REQUESTS":
-      return { ...state, requests: action.payload, isLoading: false };
-    case "SET_HISTORY":
-      return { ...state, history: action.payload, isLoading: false };
-    case "SET_BALANCES":
-      return { ...state, balances: action.payload, isLoading: false };
-    case "ADD_REQUEST":
-      return {
-        ...state,
-        requests: [...state.requests, action.payload],
-      };
-    case "UPDATE_REQUEST":
-      return {
-        ...state,
-        requests: state.requests.map((req) =>
-          req.id === action.payload.id ? action.payload : req
-        ),
-      };
-    case "CANCEL_REQUEST":
-      return {
-        ...state,
-        requests: state.requests.filter((req) => req.id !== action.payload),
-      };
-    default:
-      return state;
-  }
+interface LeaveType {
+  id: number;
+  name: string;
+  description: string;
+  max_days: number;
 }
 
-// Provider component
-export function LeaveProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(leaveReducer, initialState);
+interface LeaveRequest {
+  id?: number;
+  user_id: number;
+  type_id: number;
+  leave_type?: string;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  created_at?: string;
+  updated_at?: string;
+}
 
-  const fetchRequests = async () => {
+interface LeaveBalance {
+  id: number;
+  user_id: number;
+  type_id: number;
+  leave_type?: string;
+  days_remaining: number;
+  default_days: number;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface LeaveContextType {
+  leaveRequests: LeaveRequest[];
+  leaveBalances: LeaveBalance[];
+  leaveTypes: LeaveType[];
+  isLoading: boolean;
+  error: string | null;
+  fetchLeaveRequests: () => Promise<void>;
+  fetchLeaveBalances: () => Promise<void>;
+  fetchLeaveTypes: () => Promise<void>;
+  submitRequest: (data: {
+    startDate: string;
+    endDate: string;
+    typeId: number;
+    reason: string;
+  }) => Promise<void>;
+  updateRequest: (id: number, status: string) => Promise<void>;
+  deleteRequest: (id: number) => Promise<void>;
+}
+
+const LeaveContext = createContext<LeaveContextType | null>(null);
+
+export function LeaveProvider({ children }: { children: React.ReactNode }) {
+  const { state } = useAuth();
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const baseUrl = "http://localhost:5000/api/leave";
+
+  const api = axios.create({
+    baseURL: baseUrl,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  });
+
+  const fetchLeaveTypes = async () => {
     try {
-      dispatch({ type: "FETCH_START" });
-      const requests = await leaveAPI.getRequests();
-      dispatch({ type: "SET_REQUESTS", payload: requests });
-    } catch (error: any) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to fetch requests",
-      });
+      setIsLoading(true);
+      const response = await api.get<ApiResponse<LeaveType[]>>("/types");
+      setLeaveTypes(response.data.data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch leave types");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchLeaveRequests = async () => {
     try {
-      dispatch({ type: "FETCH_START" });
-      const history = await leaveAPI.getHistory();
-      dispatch({ type: "SET_HISTORY", payload: history });
-    } catch (error: any) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to fetch history",
-      });
+      setIsLoading(true);
+      const response = await api.get<ApiResponse<LeaveRequest[]>>("/requests");
+      setLeaveRequests(response.data.data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch leave requests");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchBalances = async () => {
+  const fetchLeaveBalances = async () => {
     try {
-      dispatch({ type: "FETCH_START" });
-      const balances = await leaveAPI.getLeaveBalance();
-      dispatch({ type: "SET_BALANCES", payload: balances });
-    } catch (error: any) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to fetch balances",
-      });
+      setIsLoading(true);
+      const response = await api.get<ApiResponse<LeaveBalance[]>>("/balance");
+      setLeaveBalances(response.data.data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch leave balances");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const submitRequest = async (leaveData: any) => {
+  const submitRequest = async (data: {
+    startDate: string;
+    endDate: string;
+    typeId: number;
+    reason: string;
+  }): Promise<void> => {
     try {
-      const request = await leaveAPI.submitRequest(leaveData);
-      dispatch({ type: "ADD_REQUEST", payload: request });
-    } catch (error: any) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to submit request",
+      setIsLoading(true);
+      await api.post("/request", {
+        type_id: data.typeId,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        reason: data.reason,
       });
+      await fetchLeaveRequests();
+      setError(null);
+    } catch (err) {
+      setError("Failed to submit leave request");
+      console.error(err);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const updateRequest = async (id: number, data: any) => {
+  const updateRequest = async (id: number, status: string): Promise<void> => {
     try {
-      const updated = await leaveAPI.updateRequest(id, data);
-      dispatch({ type: "UPDATE_REQUEST", payload: updated });
-    } catch (error: any) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to update request",
-      });
+      setIsLoading(true);
+      await api.put(`/requests/${id}`, { status });
+      await fetchLeaveRequests();
+      setError(null);
+    } catch (err) {
+      setError("Failed to update leave request");
+      console.error(err);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const cancelRequest = async (id: number) => {
+  const deleteRequest = async (id: number): Promise<void> => {
     try {
-      await leaveAPI.cancelRequest(id);
-      dispatch({ type: "CANCEL_REQUEST", payload: id });
-    } catch (error: any) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to cancel request",
-      });
+      setIsLoading(true);
+      await api.delete(`/requests/${id}`);
+      await fetchLeaveRequests();
+      setError(null);
+    } catch (err) {
+      setError("Failed to delete leave request");
+      console.error(err);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <LeaveContext.Provider
       value={{
-        state,
-        fetchRequests,
-        fetchHistory,
-        fetchBalances,
+        leaveRequests,
+        leaveBalances,
+        leaveTypes,
+        isLoading,
+        error,
+        fetchLeaveRequests,
+        fetchLeaveBalances,
+        fetchLeaveTypes,
         submitRequest,
         updateRequest,
-        cancelRequest,
+        deleteRequest,
       }}
     >
       {children}
@@ -164,7 +193,6 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Custom hook for using leave context
 export function useLeave() {
   const context = useContext(LeaveContext);
   if (!context) {

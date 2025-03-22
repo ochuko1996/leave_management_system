@@ -1,42 +1,45 @@
-import { ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Calendar, LayoutDashboard, FileText, Settings, Clock, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ReactNode } from "react";
+import { Link, useLocation, Outlet } from "react-router-dom";
+import {
+  Calendar,
+  LayoutDashboard,
+  FileText,
+  Settings,
+  Clock,
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface MainLayoutProps {
-  children: ReactNode
-}
+export function MainLayout() {
+  const location = useLocation();
 
-export function MainLayout({ children }: MainLayoutProps) {
-  const location = useLocation()
-
-  const isActive = (path: string) => location.pathname === path
+  const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
     {
-      title: 'Dashboard',
+      title: "Dashboard",
       icon: LayoutDashboard,
-      path: '/'
+      path: "/",
     },
     {
-      title: 'Leave Calendar',
+      title: "Leave Calendar",
       icon: Calendar,
-      path: '/calendar'
+      path: "/calendar",
     },
     {
-      title: 'Requests',
+      title: "Requests",
       icon: FileText,
-      path: '/requests'
+      path: "/requests",
     },
     {
-      title: 'History',
+      title: "History",
       icon: Clock,
-      path: '/history'
-    }
-  ]
+      path: "/history",
+    },
+  ];
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background w-[100vw]">
       {/* Sidebar */}
       <aside className="w-64 bg-accent/95 backdrop-blur-sm border-r border-white/10">
         {/* Logo Section */}
@@ -45,8 +48,12 @@ export function MainLayout({ children }: MainLayoutProps) {
             <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
               <span className="text-xl font-bold text-primary">CP</span>
             </div>
-            <h3 className="text-sm font-medium text-white/80">Citipolytechnic Abuja</h3>
-            <h1 className="text-base font-semibold text-white mt-1">Leave Management System</h1>
+            <h3 className="text-sm font-medium text-white/80">
+              Citipolytechnic Abuja
+            </h3>
+            <h1 className="text-base font-semibold text-white mt-1">
+              Leave Management System
+            </h1>
           </div>
         </div>
 
@@ -80,14 +87,14 @@ export function MainLayout({ children }: MainLayoutProps) {
             to="/settings"
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300",
-              isActive('/settings')
+              isActive("/settings")
                 ? "bg-primary text-white shadow-md shadow-primary/20 translate-x-2"
                 : "text-white/60 hover:text-white hover:bg-white/5 hover:translate-x-1"
             )}
           >
             <Settings size={20} className="shrink-0" />
             <span>Settings</span>
-            {isActive('/settings') && (
+            {isActive("/settings") && (
               <ChevronRight size={16} className="ml-auto" />
             )}
           </Link>
@@ -97,9 +104,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-accent p-4">
         <div className="h-full max-w-7xl mx-auto">
-          {children}
+          <Outlet />
         </div>
       </main>
     </div>
-  )
-} 
+  );
+}
