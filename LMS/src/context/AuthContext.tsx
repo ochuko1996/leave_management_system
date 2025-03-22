@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useReducer } from "react";
-import axios from "axios";
 import { AuthState, User } from "@/types";
 import { authAPI } from "@/services/api";
 
