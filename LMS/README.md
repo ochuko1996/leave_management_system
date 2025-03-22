@@ -1,50 +1,119 @@
-# React + TypeScript + Vite
+# Citipolytechnic Leave Management System - Frontend 🎯
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive web application for managing leave requests and approvals at Citipolytechnic.
 
-Currently, two official plugins are available:
+## Features 🌟
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 **Authentication System**
 
-## Expanding the ESLint configuration
+  - Secure login and registration
+  - Role-based access control (Staff, HOD, Dean, Admin)
+  - Profile management
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- 📅 **Leave Management**
 
-- Configure the top-level `parserOptions` property like this:
+  - Submit leave requests
+  - Track leave status
+  - View leave history
+  - Interactive calendar view
+  - Real-time notifications
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- 📊 **Dashboard**
+
+  - Overview of leave statistics
+  - Pending requests
+  - Leave balance
+  - Recent activities
+
+- 👥 **User Management**
+  - Profile settings
+  - Department management
+  - Role assignments
+
+## Tech Stack 💻
+
+- ⚛️ **React** - Frontend library
+- 🎨 **Tailwind CSS** - Styling
+- 📦 **Vite** - Build tool
+- 🔄 **React Router** - Navigation
+- 🎭 **Radix UI** - UI components
+- 📅 **date-fns** - Date manipulation
+- 🎯 **TypeScript** - Type safety
+- 🔄 **Axios** - API requests
+
+## Getting Started 🚀
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/ochuko1996/citi-lms.git
+cd citi-lms
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+2. Install dependencies:
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```bash
+npm install
+# or
+yarn install
 ```
+
+3. Create a `.env` file:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+4. Start the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+## Project Structure 📁
+
+```
+src/
+├── components/        # Reusable UI components
+├── context/          # React context providers
+├── hooks/            # Custom React hooks
+├── lib/             # Utility functions
+├── pages/           # Page components
+├── services/        # API service layer
+├── styles/          # Global styles
+└── types/           # TypeScript type definitions
+```
+
+## Available Scripts 📝
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript checks
+
+## Contributing 🤝
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License 📄
+
+This project is licensed under the ISC License.
+
+## Contact 📧
+
+Your Name - Ochuko Samuel George
+Project Link: https://github.com/ochuko1996/citi-lms
