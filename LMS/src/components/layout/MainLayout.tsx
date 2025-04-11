@@ -1,117 +1,144 @@
-import { ReactNode } from "react";
-import { Link, useLocation, Outlet } from "react-router-dom";
-import {
-  Calendar,
-  LayoutDashboard,
-  FileText,
-  Settings,
-  Clock,
-  ChevronRight,
-} from "lucide-react";
+import { useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useRole } from "../../hooks/useRole";
+import {
+  LayoutDashboard,
+  Calendar,
+  FileText,
+  History,
+  Settings,
+  Menu,
+  X,
+  Sun,
+  Moon,
+} from "lucide-react";
 
 export function MainLayout() {
+  const { user, logout } = useAuth();
+  const { canManageRequests } = useRole();
+  const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      path: "/",
-    },
-    {
-      title: "Leave Calendar",
-      icon: Calendar,
-      path: "/calendar",
-    },
-    {
-      title: "Requests",
-      icon: FileText,
-      path: "/requests",
-    },
-    {
-      title: "History",
-      icon: Clock,
-      path: "/history",
-    },
-    {
-      title: "Leave",
-      icon: Calendar,
-      path: "/leave",
-    },
+  const navigationItems = [
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/leave", label: "Leave", icon: Calendar },
+    { path: "/history", label: "History", icon: History },
+    ...(canManageRequests
+      ? [{ path: "/requests", label: "Requests", icon: FileText }]
+      : []),
+    { path: "/settings", label: "Settings", icon: Settings },
   ];
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
-    <div className="flex h-screen bg-background w-[100vw]">
+    <div className="min-h-screen bg-background">
+      {/* Mobile menu button */}
+      <div className="fixed top-0 left-0 right-0 z-50 lg:hidden">
+        <div className="flex items-center justify-between p-4 bg-card border-b">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 rounded-lg hover:bg-accent"
+          >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <div className="font-semibold text-foreground">Citi LMS</div>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-accent"
+          >
+            {theme === "dark" ? <Sun size={24} /> : <Moon size={24} />}
+          </button>
+        </div>
+      </div>
+
       {/* Sidebar */}
-      <aside className="w-64 bg-accent/95 backdrop-blur-sm border-r border-white/10">
-        {/* Logo Section */}
-        <div className="p-6 border-b border-white/10">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
-              <span className="text-xl font-bold text-primary">CP</span>
-            </div>
-            <h3 className="text-sm font-medium text-white/80">
-              Citipolytechnic Abuja
-            </h3>
-            <h1 className="text-base font-semibold text-white mt-1">
+      <div
+        className={cn(
+          "fixed top-0 left-0 h-screen w-64 bg-card border-r transition-all duration-300",
+          "lg:translate-x-0",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-foreground">Citi LMS</h1>
+            <p className="text-sm text-muted-foreground">
               Leave Management System
-            </h1>
+            </p>
+          </div>
+
+          <nav className="flex-1 px-4 space-y-1">
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsSidebarOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <item.icon className="w-4 h-4 mr-3" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="p-4 border-t">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {user?.full_name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {user?.department}
+                </p>
+              </div>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-accent"
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200"
+            >
+              Logout
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Navigation */}
-        <div className="p-4">
-          <nav className="space-y-1">
-            {menuItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300",
-                  isActive(item.path)
-                    ? "bg-primary text-white shadow-md shadow-primary/20 translate-x-2"
-                    : "text-white/60 hover:text-white hover:bg-white/5 hover:translate-x-1"
-                )}
-              >
-                <item.icon size={20} className="shrink-0" />
-                <span>{item.title}</span>
-                {isActive(item.path) && (
-                  <ChevronRight size={16} className="ml-auto" />
-                )}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* Settings */}
-        <div className="absolute bottom-0 w-64 p-4 border-t border-white/10 bg-accent/95 backdrop-blur-sm">
-          <Link
-            to="/settings"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300",
-              isActive("/settings")
-                ? "bg-primary text-white shadow-md shadow-primary/20 translate-x-2"
-                : "text-white/60 hover:text-white hover:bg-white/5 hover:translate-x-1"
-            )}
-          >
-            <Settings size={20} className="shrink-0" />
-            <span>Settings</span>
-            {isActive("/settings") && (
-              <ChevronRight size={16} className="ml-auto" />
-            )}
-          </Link>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-accent p-4">
-        <div className="h-full max-w-7xl mx-auto">
+      {/* Main content */}
+      <div
+        className={cn(
+          "min-h-screen pt-16 lg:pt-0 transition-all duration-300",
+          "lg:ml-64",
+          isSidebarOpen ? "ml-64" : "ml-0"
+        )}
+      >
+        <div className="p-6">
           <Outlet />
         </div>
-      </main>
+      </div>
     </div>
   );
 }

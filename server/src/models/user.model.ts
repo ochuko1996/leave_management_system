@@ -34,7 +34,6 @@ export class UserModel {
         staff_id,
       ]
     );
-    console.log(result);
     const insertResult = result as any;
     return { ...user, id: insertResult.insertId };
   }

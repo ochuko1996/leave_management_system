@@ -33,77 +33,81 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent to-accent/90 flex items-center justify-center p-4 w-[100vw]">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 w-[100vw]">
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl font-bold text-primary">CP</span>
           </div>
-          <h1 className="text-2xl font-semibold text-white">Welcome Back</h1>
-          <p className="text-white/60 mt-2">Sign in to your account</p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Welcome Back
+          </h1>
+          <p className="text-muted-foreground mt-2">Sign in to your account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-6">
+        <div className="bg-card rounded-lg border p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Email</label>
+              <label className="text-sm font-medium text-foreground">
+                Email
+              </label>
               <div className="relative">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={cn(
-                    "w-full px-10 py-2 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 text-white transition-all duration-300",
-                    state.error && "border-red-400 focus:ring-red-400/30"
+                    "w-full px-10 py-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300",
+                    state.error &&
+                      "border-destructive focus:ring-destructive/30"
                   )}
                   placeholder="Enter your email"
                 />
-                <Mail className="absolute left-3 top-2.5 h-5 w-5 text-white/60" />
+                <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Password</label>
+              <label className="text-sm font-medium text-foreground">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={cn(
-                    "w-full px-10 py-2 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 text-white transition-all duration-300",
-                    state.error && "border-red-400 focus:ring-red-400/30"
+                    "w-full px-10 py-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300",
+                    state.error &&
+                      "border-destructive focus:ring-destructive/30"
                   )}
                   placeholder="Enter your password"
                 />
-                <Lock className="absolute left-3 top-2.5 h-5 w-5 text-white/60" />
+                <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               </div>
             </div>
 
-            {(state.error || formError) && (
-              <div className="text-sm text-red-400 flex items-center gap-2">
-                <AlertCircle size={16} />
-                <span>{state.error || formError}</span>
+            {formError && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                <span>{formError}</span>
               </div>
             )}
 
             <button
               type="submit"
-              disabled={state.isLoading}
-              className={cn(
-                "w-full px-4 py-2 bg-primary text-white rounded-lg transition-all duration-300 hover:bg-primary/90 hover:scale-105 active:scale-95",
-                state.isLoading && "opacity-50 cursor-not-allowed"
-              )}
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-300"
             >
-              {state.isLoading ? "Signing in..." : "Sign in"}
+              Sign In
             </button>
           </form>
         </div>
 
         {/* Additional Links */}
         <div className="mt-6 text-center">
-          <p className="text-white/60">
+          <p className="text-muted-foreground">
             Don't have an account?{" "}
             <button
               onClick={() => navigate("/register")}

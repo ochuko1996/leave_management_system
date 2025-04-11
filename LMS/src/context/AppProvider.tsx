@@ -1,6 +1,7 @@
 import { AuthProvider } from "./AuthContext";
 import { ToastContainer } from "./ToastContext";
 import { LeaveProvider } from "./LeaveContext";
+import { ThemeProvider } from "./ThemeContext";
 
 interface AppProviderProps {
   children: React.ReactNode;
@@ -8,10 +9,12 @@ interface AppProviderProps {
 
 export function AppProvider({ children }: AppProviderProps) {
   return (
-    <AuthProvider>
-      <LeaveProvider>
-        <ToastContainer>{children}</ToastContainer>
-      </LeaveProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <LeaveProvider>
+          <ToastContainer>{children}</ToastContainer>
+        </LeaveProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

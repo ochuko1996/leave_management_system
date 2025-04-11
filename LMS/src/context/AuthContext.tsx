@@ -1,140 +1,127 @@
-import React, { createContext, useContext, useReducer } from "react";
-import { AuthState, User } from "@/types";
+import { createContext, useContext, useState } from "react";
+import { User } from "@/types";
 import { authAPI } from "@/services/api";
 
-// Define action types
-type AuthAction =
-  | { type: "LOGIN_START" | "LOGOUT" | "REGISTER_START" }
-  | { type: "LOGIN_SUCCESS" | "REGISTER_SUCCESS"; payload: User }
-  | { type: "LOGIN_ERROR" | "REGISTER_ERROR"; payload: string }
-  | { type: "UPDATE_PROFILE"; payload: User };
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
 
-// Initial state
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: Boolean(localStorage.getItem("token")),
-  isLoading: false,
-  error: null,
-  token: localStorage.getItem("token"),
-};
-
-// Create context
-const AuthContext = createContext<{
+interface AuthContextType {
   state: AuthState;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => void;
   updateProfile: (data: any) => Promise<void>;
-} | null>(null);
-
-// Reducer function
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case "LOGIN_START":
-    case "REGISTER_START":
-      return { ...state, isLoading: true, error: null };
-    case "LOGIN_SUCCESS":
-    case "REGISTER_SUCCESS":
-      return {
-        ...state,
-        isLoading: false,
-        isAuthenticated: true,
-        user: action.payload,
-        error: null,
-        token: localStorage.getItem("token"),
-      };
-    case "LOGIN_ERROR":
-    case "REGISTER_ERROR":
-      return {
-        ...state,
-        isLoading: false,
-        isAuthenticated: false,
-        user: null,
-        error: action.payload,
-        token: null,
-      };
-    case "LOGOUT":
-      return {
-        ...state,
-        isAuthenticated: false,
-        user: null,
-        error: null,
-        token: null,
-      };
-    case "UPDATE_PROFILE":
-      return {
-        ...state,
-        user: action.payload,
-        token: localStorage.getItem("token"),
-      };
-    default:
-      return state;
-  }
+  user: User | null;
 }
 
-// Provider component
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  const [state, setState] = useState<AuthState>(() => {
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    const user = userStr ? (JSON.parse(userStr) as User) : null;
+    return {
+      user,
+      token,
+      isAuthenticated: !!token,
+      isLoading: false,
+      error: null,
+    };
+  });
 
   const login = async (email: string, password: string) => {
     try {
-      dispatch({ type: "LOGIN_START" });
-      const { user, token } = await authAPI.login(email, password);
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      dispatch({ type: "LOGIN_SUCCESS", payload: user });
-    } catch (error: any) {
-      dispatch({
-        type: "LOGIN_ERROR",
-        payload: error.response?.data?.message || "Login failed",
-      });
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      // Your login logic here
+      const response = await authAPI.login(email, password);
+      localStorage.setItem("token", response?.token);
+      localStorage.setItem("user", JSON.stringify(response?.user));
+      setState((prev) => ({
+        ...prev,
+        user: response.user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+      }));
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: "Login failed",
+        isLoading: false,
+      }));
     }
   };
 
   const register = async (userData: any) => {
     try {
-      dispatch({ type: "REGISTER_START" });
-      const { user } = await authAPI.register(userData);
-      localStorage.setItem("user", JSON.stringify(user));
-      dispatch({ type: "REGISTER_SUCCESS", payload: user });
-    } catch (error: any) {
-      dispatch({
-        type: "REGISTER_ERROR",
-        payload: error.response?.data?.message || "Registration failed",
-      });
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      // Your register logic here
+      // const response = await authAPI.register(userData)
+      // localStorage.setItem('token', response.token)
+      // localStorage.setItem('user', JSON.stringify(response.user))
+      // setState(prev => ({ ...prev, user: response.user, token: response.token, isAuthenticated: true, isLoading: false }))
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: "Registration failed",
+        isLoading: false,
+      }));
     }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    dispatch({ type: "LOGOUT" });
+    setState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    });
   };
 
   const updateProfile = async (data: any) => {
     try {
-      const { user } = await authAPI.updateProfile(data);
-      localStorage.setItem("user", JSON.stringify(user));
-      dispatch({ type: "UPDATE_PROFILE", payload: user });
-    } catch (error: any) {
-      // Handle error but don't change state
-      console.error("Profile update failed:", error);
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      // Your update profile logic here
+      // const response = await authAPI.updateProfile(data)
+      // localStorage.setItem('user', JSON.stringify(response.user))
+      // setState(prev => ({ ...prev, user: response.user, isLoading: false }))
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: "Profile update failed",
+        isLoading: false,
+      }));
     }
   };
 
   return (
     <AuthContext.Provider
-      value={{ state, login, register, logout, updateProfile }}
+      value={{
+        state,
+        login,
+        register,
+        logout,
+        updateProfile,
+        user: state.user,
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Custom hook for using auth context
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import axios from "axios";
 import { useAuth } from "./AuthContext";
 
@@ -66,57 +73,159 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
+  const retryTimeout = useRef<NodeJS.Timeout>();
+  const isInitialMount = useRef(true);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   const baseUrl = "http://localhost:5000/api/leave";
 
   const api = axios.create({
     baseURL: baseUrl,
     headers: {
+      "Content-Type": "application/json",
       Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
+    timeout: 10000, // 10 second timeout
   });
 
-  const fetchLeaveTypes = async () => {
+  // Add request interceptor with proper type annotation
+  api.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("token");
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Add response interceptor
+  api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      if (error.response?.status === 401) {
+        // Handle unauthorized error
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  // Fix generic type declaration
+  const fetchWithRetry = async <T,>(
+    fetchFn: () => Promise<T>,
+    setData: (data: T) => void,
+    errorMessage: string
+  ): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await api.get<ApiResponse<LeaveType[]>>("/types");
-      setLeaveTypes(response.data.data);
+      const data = await fetchFn();
+      setData(data);
       setError(null);
+      retryCount.current = 0; // Reset retry count on success
     } catch (err) {
-      setError("Failed to fetch leave types");
-      console.error(err);
+      if (retryCount.current < maxRetries) {
+        retryCount.current += 1;
+        const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
+
+        if (retryTimeout.current) {
+          clearTimeout(retryTimeout.current);
+        }
+
+        console.log(
+          `Retrying in ${delay / 1000} seconds (attempt ${retryCount.current})`
+        );
+        retryTimeout.current = setTimeout(() => {
+          fetchWithRetry(fetchFn, setData, errorMessage);
+        }, delay);
+      } else {
+        setError(errorMessage);
+        console.error(err);
+        retryCount.current = 0;
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchLeaveRequests = async () => {
-    try {
-      setIsLoading(true);
-      const response = await api.get<ApiResponse<LeaveRequest[]>>("/requests");
-      setLeaveRequests(response.data.data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch leave requests");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const fetchLeaveTypes = useCallback(async () => {
+    await fetchWithRetry(
+      async () => {
+        const response = await api.get<ApiResponse<LeaveType[]>>("/types");
+        return response.data.data;
+      },
+      setLeaveTypes,
+      "Failed to fetch leave types"
+    );
+  }, []);
 
-  const fetchLeaveBalances = async () => {
-    try {
-      setIsLoading(true);
-      const response = await api.get<ApiResponse<LeaveBalance[]>>("/balance");
-      setLeaveBalances(response.data.data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch leave balances");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+  const fetchLeaveRequests = useCallback(async () => {
+    await fetchWithRetry(
+      async () => {
+        const response = await api.get<ApiResponse<LeaveRequest[]>>(
+          "/requests"
+        );
+        return response.data.data;
+      },
+      setLeaveRequests,
+      "Failed to fetch leave requests"
+    );
+  }, []);
+
+  const fetchLeaveBalances = useCallback(async () => {
+    await fetchWithRetry(
+      async () => {
+        const response = await api.get<ApiResponse<LeaveBalance[]>>("/balance");
+        return response.data.data;
+      },
+      setLeaveBalances,
+      "Failed to fetch leave balances"
+    );
+  }, []);
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (retryTimeout.current) {
+        clearTimeout(retryTimeout.current);
+      }
+    };
+  }, []);
+
+  // Initial data fetch - only on first mount to prevent infinite loops
+  useEffect(() => {
+    // Only fetch data once when authenticated
+    if (state.isAuthenticated && !initialDataLoaded) {
+      console.log("Initial data fetch - this should only happen once");
+
+      // Set flag to prevent repeated data fetching
+      setInitialDataLoaded(true);
+
+      // Stagger the API calls to prevent overwhelming the server
+      fetchLeaveTypes();
+
+      setTimeout(() => {
+        fetchLeaveRequests();
+      }, 1500);
+
+      setTimeout(() => {
+        fetchLeaveBalances();
+      }, 3000);
     }
-  };
+  }, [
+    state.isAuthenticated,
+    initialDataLoaded,
+    fetchLeaveTypes,
+    fetchLeaveRequests,
+    fetchLeaveBalances,
+  ]);
 
   const submitRequest = async (data: {
     startDate: string;
@@ -132,6 +241,7 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
         end_date: data.endDate,
         reason: data.reason,
       });
+      // Fetch leave requests only after successful submission
       await fetchLeaveRequests();
       setError(null);
     } catch (err) {
@@ -147,6 +257,7 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       await api.put(`/requests/${id}`, { status });
+      // Fetch leave requests only after successful update
       await fetchLeaveRequests();
       setError(null);
     } catch (err) {
@@ -162,6 +273,7 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       await api.delete(`/requests/${id}`);
+      // Fetch leave requests only after successful deletion
       await fetchLeaveRequests();
       setError(null);
     } catch (err) {

@@ -9,6 +9,7 @@ import { LoginPage } from "@/pages/auth/login";
 import { RegisterPage } from "@/pages/auth/register";
 import { useAuth } from "@/context/AuthContext";
 import { LeavePage } from "@/pages/leave";
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
   if (!state.isAuthenticated) {
@@ -29,7 +30,8 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<DashboardPage />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/requests" element={<RequestsPage />} />
         <Route path="/history" element={<HistoryPage />} />

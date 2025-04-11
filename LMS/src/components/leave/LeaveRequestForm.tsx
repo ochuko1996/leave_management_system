@@ -21,6 +21,14 @@ interface ValidationErrors {
   reason?: string;
 }
 
+interface LeaveBalances {
+  [key: string]: number | string;
+  annual: number;
+  sick: number;
+  personal: number;
+  unpaid: string;
+}
+
 export function LeaveRequestForm({
   className,
   ...props
@@ -33,24 +41,17 @@ export function LeaveRequestForm({
   const [formData, setFormData] = useState({
     startDate: "",
     endDate: "",
-    leaveType: "",
+    typeId: "",
     reason: "",
   });
-  const { leaveTypes, fetchLeaveTypes, submitRequest } = useLeave();
+  const { leaveTypes, fetchLeaveTypes, submitRequest, leaveBalances } =
+    useLeave();
 
   // fetchLeaveTypes();
   useEffect(() => {
     const fetchLeaves = async () => await fetchLeaveTypes();
     fetchLeaves();
   }, []);
-
-  // Mock data for available leave balances
-  const leaveBalances = {
-    annual: 15,
-    sick: 10,
-    personal: 5,
-    unpaid: "Unlimited",
-  };
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -63,7 +64,7 @@ export function LeaveRequestForm({
       newErrors.endDate = "End date is required";
     }
 
-    if (!formData.leaveType) {
+    if (!formData.typeId) {
       newErrors.leaveType = "Leave type is required";
     }
 
@@ -78,21 +79,20 @@ export function LeaveRequestForm({
       if (end < start) {
         newErrors.endDate = "End date must be after start date";
       }
-    }
 
-    // Calculate leave duration
-    if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
+      // Calculate leave duration and check balance
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      // Check if requested days exceed available balance
+      // Only check balance for leave types with numeric balances
+      const selectedType = formData.typeId;
+      const balance = leaveBalances[selectedType];
       if (
-        formData.leaveType !== "unpaid" &&
-        diffDays > leaveBalances[formData.leaveType]
+        selectedType !== "unpaid" &&
+        typeof balance === "number" &&
+        diffDays > balance
       ) {
-        newErrors.endDate = `Requested days exceed available ${formData.leaveType} leave balance`;
+        newErrors.endDate = `Requested days exceed available ${selectedType} leave balance`;
       }
     }
 
@@ -114,8 +114,10 @@ export function LeaveRequestForm({
         endDate: formData.endDate,
         startDate: formData.startDate,
         reason: formData.reason,
-        typeId: parseInt(formData.leaveType),
+        typeId: parseInt(formData.typeId),
       };
+      console.log(newRequest, "newRequest");
+
       await submitRequest(newRequest);
       showToast("Success", "Leave request submitted successfully");
       navigate("/requests");
@@ -156,54 +158,58 @@ export function LeaveRequestForm({
         {/* Header Section */}
         <div className="mb-6 sm:mb-8">
           <div className="space-y-1">
-            <h2 className="text-xl sm:text-2xl font-semibold text-white">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
               Request Leave
             </h2>
-            <p className="text-sm text-white/60">Submit a new leave request</p>
+            <p className="text-sm text-muted-foreground">
+              Submit a new leave request
+            </p>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 sm:mb-8">
-          <div className="bg-white/10 p-4 sm:p-6 rounded-lg backdrop-blur-sm border border-white/20">
-            <div className="text-sm font-medium text-white/60">
+        {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 sm:mb-8">
+          <div className="bg-card p-4 sm:p-6 rounded-lg border">
+            <div className="text-sm font-medium text-muted-foreground">
               Annual Leave
             </div>
-            <div className="text-xl sm:text-2xl font-semibold mt-1 text-white">
+            <div className="text-xl sm:text-2xl font-semibold mt-1 text-foreground">
               {leaveBalances.annual} days
             </div>
           </div>
-          <div className="bg-white/10 p-4 sm:p-6 rounded-lg backdrop-blur-sm border border-white/20">
-            <div className="text-sm font-medium text-white/60">Sick Leave</div>
-            <div className="text-xl sm:text-2xl font-semibold mt-1 text-white">
+          <div className="bg-card p-4 sm:p-6 rounded-lg border">
+            <div className="text-sm font-medium text-muted-foreground">
+              Sick Leave
+            </div>
+            <div className="text-xl sm:text-2xl font-semibold mt-1 text-foreground">
               {leaveBalances.sick} days
             </div>
           </div>
-          <div className="bg-white/10 p-4 sm:p-6 rounded-lg backdrop-blur-sm border border-white/20">
-            <div className="text-sm font-medium text-white/60">
+          <div className="bg-card p-4 sm:p-6 rounded-lg border">
+            <div className="text-sm font-medium text-muted-foreground">
               Personal Leave
             </div>
-            <div className="text-xl sm:text-2xl font-semibold mt-1 text-white">
+            <div className="text-xl sm:text-2xl font-semibold mt-1 text-foreground">
               {leaveBalances.personal} days
             </div>
           </div>
-          <div className="bg-white/10 p-4 sm:p-6 rounded-lg backdrop-blur-sm border border-white/20">
-            <div className="text-sm font-medium text-white/60">
+          <div className="bg-card p-4 sm:p-6 rounded-lg border">
+            <div className="text-sm font-medium text-muted-foreground">
               Unpaid Leave
             </div>
-            <div className="text-xl sm:text-2xl font-semibold mt-1 text-white">
+            <div className="text-xl sm:text-2xl font-semibold mt-1 text-foreground">
               {leaveBalances.unpaid}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Form */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-          <form onSubmit={handleSubmit} className="divide-y divide-white/10">
+        <div className="bg-card rounded-lg border">
+          <form onSubmit={handleSubmit} className="divide-y divide-border">
             <div className="p-4 sm:p-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-foreground">
                     Start Date
                   </label>
                   <div className="relative">
@@ -213,23 +219,23 @@ export function LeaveRequestForm({
                       value={formData.startDate}
                       onChange={handleChange}
                       className={cn(
-                        "w-full p-2 pr-8 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 text-white transition-all duration-300",
+                        "w-full p-2 pr-8 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300",
                         errors.startDate &&
-                          "border-red-400 focus:ring-red-400/30"
+                          "border-destructive focus:ring-destructive/30"
                       )}
                       required
                     />
-                    <Calendar className="absolute right-2 top-2.5 h-5 w-5 text-white/60" />
+                    <Calendar className="absolute right-2 top-2.5 h-5 w-5 text-muted-foreground" />
                   </div>
                   {errors.startDate && (
-                    <div className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                    <div className="text-xs text-destructive flex items-center gap-1 mt-1">
                       <AlertCircle size={12} />
                       {errors.startDate}
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-foreground">
                     End Date
                   </label>
                   <div className="relative">
@@ -239,15 +245,16 @@ export function LeaveRequestForm({
                       value={formData.endDate}
                       onChange={handleChange}
                       className={cn(
-                        "w-full p-2 pr-8 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 text-white transition-all duration-300",
-                        errors.endDate && "border-red-400 focus:ring-red-400/30"
+                        "w-full p-2 pr-8 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300",
+                        errors.endDate &&
+                          "border-destructive focus:ring-destructive/30"
                       )}
                       required
                     />
-                    <Calendar className="absolute right-2 top-2.5 h-5 w-5 text-white/60" />
+                    <Calendar className="absolute right-2 top-2.5 h-5 w-5 text-muted-foreground" />
                   </div>
                   {errors.endDate && (
-                    <div className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                    <div className="text-xs text-destructive flex items-center gap-1 mt-1">
                       <AlertCircle size={12} />
                       {errors.endDate}
                     </div>
@@ -256,87 +263,82 @@ export function LeaveRequestForm({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-foreground">
                   Leave Type
                 </label>
                 <select
-                  name="leaveType"
-                  value={formData.leaveType}
+                  name="typeId"
+                  value={formData.typeId}
                   onChange={handleChange}
                   className={cn(
-                    "w-full p-2 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 text-white transition-all duration-300",
-                    errors.leaveType && "border-red-400 focus:ring-red-400/30"
+                    "w-full p-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300",
+                    errors.leaveType &&
+                      "border-destructive focus:ring-destructive/30"
                   )}
                   required
                 >
-                  <option value="" className="bg-accent text-white">
-                    Select a leave type
-                  </option>
-                  {leaveTypes.map((types) => (
-                    <option
-                      key={types.id}
-                      value={types.id}
-                      className="bg-accent text-white"
-                    >
-                      {types.name}
+                  <option value="">Select a leave type</option>
+                  {leaveTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name} (
+                      {leaveBalances.find((b) => b.leave_type_id === type.id)
+                        ?.days_remaining || 0}{" "}
+                      days remaining)
                     </option>
                   ))}
-                  {/* <option value="sick" className="bg-accent text-white">
-                    Sick Leave
-                  </option>
-                  <option value="personal" className="bg-accent text-white">
-                    Personal Leave
-                  </option>
-                  <option value="unpaid" className="bg-accent text-white">
-                    Unpaid Leave
-                  </option> */}
                 </select>
-                {formData.startDate &&
-                  formData.endDate &&
-                  formData.leaveType !== "unpaid" && (
-                    <div className="text-xs text-white/60 flex items-center gap-1 mt-1">
-                      <Clock size={12} />
-                      Duration: {calculateDuration()} days (Available:{" "}
-                      {leaveBalances[formData.leaveType]} days)
-                    </div>
-                  )}
+                {errors.leaveType && (
+                  <div className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle size={12} />
+                    {errors.leaveType}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Reason</label>
+                <label className="text-sm font-medium text-foreground">
+                  Reason
+                </label>
                 <textarea
                   name="reason"
                   value={formData.reason}
                   onChange={handleChange}
+                  rows={4}
                   className={cn(
-                    "w-full p-2 bg-white/5 border border-white/20 rounded-lg min-h-[100px] focus:outline-none focus:ring-2 focus:ring-white/30 text-white transition-all duration-300",
-                    errors.reason && "border-red-400 focus:ring-red-400/30"
+                    "w-full p-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300",
+                    errors.reason &&
+                      "border-destructive focus:ring-destructive/30"
                   )}
-                  placeholder="Please provide a detailed reason for your leave request..."
+                  placeholder="Please provide a reason for your leave request"
                   required
                 />
                 {errors.reason && (
-                  <div className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                  <div className="text-xs text-destructive flex items-center gap-1 mt-1">
                     <AlertCircle size={12} />
                     {errors.reason}
                   </div>
                 )}
               </div>
+
+              {calculateDuration() && (
+                <div className="text-sm text-muted-foreground">
+                  Duration: {calculateDuration()} days
+                </div>
+              )}
             </div>
 
-            <div className="p-4 sm:p-6 bg-white/5">
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={cn(
-                    "px-6 py-2 bg-primary text-white rounded-lg transition-all duration-300 hover:bg-primary/90 hover:scale-105 active:scale-95",
-                    isSubmitting && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Request"}
-                </button>
-              </div>
+            <div className="p-4 sm:p-6 bg-accent/5">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={cn(
+                  "w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium transition-all duration-300",
+                  "hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                {isSubmitting ? "Submitting..." : "Submit Request"}
+              </button>
             </div>
           </form>
         </div>

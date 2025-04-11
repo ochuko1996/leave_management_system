@@ -90,45 +90,45 @@ export function CalendarPage() {
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-accent to-accent/90 rounded-lg p-6">
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
+    <div className="min-h-full bg-card rounded-lg p-4 lg:p-6">
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h2 className="text-2xl font-semibold text-white">
+            <h2 className="text-xl lg:text-2xl font-semibold text-foreground">
               Leave Calendar
             </h2>
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-muted-foreground">
               View and manage team leave schedules
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={goToPreviousMonth}
-              className="px-4 py-2 text-sm border border-white/20 text-white rounded-lg transition-all duration-300 hover:bg-white/10 hover:scale-105 active:scale-95"
+              className="px-3 lg:px-4 py-2 text-sm border border-border text-foreground rounded-lg transition-all duration-300 hover:bg-accent hover:scale-105 active:scale-95"
             >
               Previous
             </button>
-            <span className="text-sm font-medium text-white min-w-[100px] text-center">
+            <span className="text-sm font-medium text-foreground min-w-[100px] text-center">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </span>
             <button
               onClick={goToNextMonth}
-              className="px-4 py-2 text-sm border border-white/20 text-white rounded-lg transition-all duration-300 hover:bg-white/10 hover:scale-105 active:scale-95"
+              className="px-3 lg:px-4 py-2 text-sm border border-border text-foreground rounded-lg transition-all duration-300 hover:bg-accent hover:scale-105 active:scale-95"
             >
               Next
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-              <div className="grid grid-cols-7 gap-px border-b border-white/20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+          <div className="lg:col-span-2">
+            <div className="bg-background rounded-lg border overflow-hidden">
+              <div className="grid grid-cols-7 gap-px border-b border-border">
                 {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                   (day) => (
                     <div
                       key={day}
-                      className="p-4 text-sm font-medium text-white text-center"
+                      className="p-2 lg:p-4 text-xs lg:text-sm font-medium text-foreground text-center"
                     >
                       {day}
                     </div>
@@ -137,7 +137,7 @@ export function CalendarPage() {
               </div>
               <div className="grid grid-cols-7 gap-px">
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                  <div key={`empty-${i}`} className="p-4 bg-white/5" />
+                  <div key={`empty-${i}`} className="p-2 lg:p-4 bg-accent/5" />
                 ))}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
@@ -149,16 +149,15 @@ export function CalendarPage() {
                       key={day}
                       onClick={() => handleDateClick(day)}
                       className={cn(
-                        "p-4 cursor-pointer transition-all duration-300 hover:bg-white/10 group relative",
-                        isToday(day) && "bg-primary/20",
-                        hasLeaves && "bg-white/5",
-                        selectedDate?.getDate() === day &&
-                          "ring-2 ring-white/40"
+                        "p-2 lg:p-4 cursor-pointer transition-all duration-300 hover:bg-accent/50 group relative",
+                        isToday(day) && "bg-primary/10",
+                        hasLeaves && "bg-accent/10",
+                        selectedDate?.getDate() === day && "ring-2 ring-ring"
                       )}
                     >
                       <div
                         className={cn(
-                          "text-sm text-white transition-all duration-300 group-hover:font-medium text-center",
+                          "text-xs lg:text-sm text-foreground transition-all duration-300 group-hover:font-medium text-center",
                           isToday(day) && "font-bold"
                         )}
                       >
@@ -189,16 +188,18 @@ export function CalendarPage() {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4">
+          <div className="bg-background rounded-lg border border-border p-4">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white">Leave Details</h3>
+              <h3 className="text-lg font-medium text-foreground">
+                Leave Details
+              </h3>
               {isLoading ? (
-                <div className="text-sm text-white/60 flex items-center gap-2">
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
                   Loading leave data...
                 </div>
               ) : selectedDate ? (
                 <>
-                  <div className="text-sm text-white/60">
+                  <div className="text-sm text-muted-foreground">
                     {selectedDate.toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
@@ -207,35 +208,35 @@ export function CalendarPage() {
                     })}
                   </div>
                   {getLeavesForDate(selectedDate.getDate()).length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
                       {getLeavesForDate(selectedDate.getDate()).map(
                         (leave, index) => (
                           <div
                             key={index}
-                            className="bg-white/5 rounded-lg p-3 space-y-2"
+                            className="bg-accent/10 rounded-lg p-3 space-y-2"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-white">
+                              <span className="text-sm font-medium text-foreground">
                                 {leave.full_name || "Unknown"}
                               </span>
                               <span
                                 className={cn(
                                   "text-xs px-2 py-1 rounded-full",
                                   leave.status === "approved" &&
-                                    "bg-green-500/20 text-green-300",
+                                    "bg-green-500/20 text-green-500",
                                   leave.status === "pending" &&
-                                    "bg-yellow-500/20 text-yellow-300",
+                                    "bg-yellow-500/20 text-yellow-500",
                                   leave.status === "rejected" &&
-                                    "bg-red-500/20 text-red-300"
+                                    "bg-red-500/20 text-red-500"
                                 )}
                               >
                                 {leave.status}
                               </span>
                             </div>
-                            <div className="text-sm text-white/60">
+                            <div className="text-sm text-foreground">
                               {leave.leave_type || "Leave"}
                             </div>
-                            <div className="text-xs text-white/40">
+                            <div className="text-xs text-muted-foreground">
                               {format(
                                 new Date(leave.start_date),
                                 "MMM dd, yyyy"
@@ -243,7 +244,7 @@ export function CalendarPage() {
                               -{" "}
                               {format(new Date(leave.end_date), "MMM dd, yyyy")}
                             </div>
-                            <div className="text-xs text-white/40">
+                            <div className="text-sm text-muted-foreground">
                               Reason: {leave.reason}
                             </div>
                           </div>
@@ -251,14 +252,14 @@ export function CalendarPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="text-sm text-white/60 flex items-center gap-2">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <Info size={16} />
                       No leave requests for this date
                     </div>
                   )}
                 </>
               ) : (
-                <div className="text-sm text-white/60 flex items-center gap-2">
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
                   <Info size={16} />
                   Select a date to view leave details
                 </div>

@@ -12,7 +12,7 @@ export class LeaveController {
     next: NextFunction
   ) {
     try {
-      const { type_id, start_date, end_date, reason } = req.body;
+      const { leave_type_id, start_date, end_date, reason } = req.body;
       const user_id = req.user?.id;
 
       if (!user_id) {
@@ -21,7 +21,7 @@ export class LeaveController {
 
       const leaveRequest = await LeaveModel.create({
         user_id,
-        leave_type_id: type_id,
+        leave_type_id,
         start_date,
         end_date,
         reason,
@@ -47,30 +47,38 @@ export class LeaveController {
     next: NextFunction
   ) {
     try {
+      console.log("Fetching leave requests...");
       const user_id = req.user?.id;
       const role = req.user?.role;
 
-      if (!user_id) {
-        throw new ApiError(401, "Unauthorized");
-      }
-      console.log(role, "role", user_id, "user_id");
+      // Add delay to prevent resource exhaustion (optional - remove in production)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       let leaveRequests;
-      if (role === "admin" || role === "hod") {
-        // Admins and HODs can see all requests
+
+      if (role === "admin" || role === "hod" || role === "dean") {
+        // Admins, HODs, and Deans can see all leave requests
         leaveRequests = await LeaveModel.findAll();
-        console.log(leaveRequests, "leaveRequests admin");
       } else {
-        // Regular staff can only see their own requests
-        leaveRequests = await LeaveModel.findByUserId(user_id);
-        console.log(leaveRequests, "leaveRequests staff");
+        // Staff can only see their own leave requests
+        leaveRequests = await LeaveModel.findByUserId(user_id!);
       }
 
-      return res.json({
+      console.log(
+        `Successfully fetched ${leaveRequests.length} leave requests`
+      );
+
+      return res.status(200).json({
         success: true,
+        message: "Leave requests retrieved successfully",
         data: leaveRequests,
       });
     } catch (error) {
-      next(error);
+      console.error("Error fetching leave requests:", error);
+      if (error instanceof ApiError) {
+        return next(error);
+      }
+      return next(new ApiError(500, "Failed to retrieve leave requests"));
     }
   }
 
@@ -205,13 +213,26 @@ export class LeaveController {
   // Leave Type Methods
   static async getLeaveTypes(req: Request, res: Response, next: NextFunction) {
     try {
+      console.log("Fetching leave types...");
+
+      // Add delay to prevent resource exhaustion (optional - remove in production)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const leaveTypes = await LeaveTypeModel.findAll();
-      return res.json({
+
+      console.log(`Successfully fetched ${leaveTypes.length} leave types`);
+
+      return res.status(200).json({
         success: true,
+        message: "Leave types retrieved successfully",
         data: leaveTypes,
       });
     } catch (error) {
-      next(error);
+      console.error("Error fetching leave types:", error);
+      if (error instanceof ApiError) {
+        return next(error);
+      }
+      return next(new ApiError(500, "Failed to retrieve leave types"));
     }
   }
 

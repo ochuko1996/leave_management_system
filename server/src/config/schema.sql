@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS leave_types (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(50) NOT NULL,
   description TEXT,
-  max_days INT NOT NULL,
+  default_days INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS leave_types (
 CREATE TABLE IF NOT EXISTS leave_requests (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
-  type_id INT NOT NULL,
+  leave_type_id INT NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   reason TEXT NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
+  FOREIGN KEY (leave_type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
   FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -46,23 +46,17 @@ CREATE TABLE IF NOT EXISTS leave_requests (
 CREATE TABLE IF NOT EXISTS leave_balances (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
-  type_id INT NOT NULL,
-  year INT NOT NULL,
-  total_days INT NOT NULL,
-  used_days INT NOT NULL DEFAULT 0,
-  remaining_days INT NOT NULL,
+  leave_type_id INT NOT NULL,
+  days_remaining INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
-  UNIQUE KEY unique_balance (user_id, type_id, year)
+  FOREIGN KEY (leave_type_id) REFERENCES leave_types(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_balance (user_id, leave_type_id)
 );
 
 -- Insert default leave types
-INSERT INTO leave_types (name, description, max_days) VALUES
-('Academic Leave', 'Leave for academic-related activities', 30),
-('Medical Leave', 'Leave for health-related issues', 15),
-('Conference Leave', 'Leave for attending academic conferences', 10),
-('Study Leave', 'Leave for exam preparation or research', 20),
-('Research Leave', 'Leave for conducting research projects', 30),
-('Personal Leave', 'Leave for personal matters', 5); 
+INSERT INTO leave_types (name, description, default_days) VALUES
+('Annual Leave', 'Paid time off', 21),
+('Sick Leave', 'Medical leave', 14),
+('Personal Leave', 'Personal time off', 5); 

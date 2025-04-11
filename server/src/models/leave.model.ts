@@ -30,7 +30,6 @@ export class LeaveModel {
           data.status,
         ]
       );
-      console.log(result, "result");
 
       const id = (result as any).insertId;
       return this.findById(id);

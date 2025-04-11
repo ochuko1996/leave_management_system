@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserModel } from "../models/user.model";
+import { LeaveBalanceModel } from "../models/leave-balance.model";
 import { comparePassword, generateToken } from "../utils/auth";
 
 export class AuthController {
@@ -7,7 +8,9 @@ export class AuthController {
     try {
       const userData = req.body;
       const user = await UserModel.create(userData);
-      console.log(user);
+      // Initialize leave balances for the new user
+      await LeaveBalanceModel.initializeBalance(user.id!);
+
       const { password, ...userWithoutPassword } = user;
       res.status(201).json({ user: userWithoutPassword });
     } catch (error) {
