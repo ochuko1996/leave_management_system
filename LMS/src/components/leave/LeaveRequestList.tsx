@@ -56,8 +56,13 @@ export function LeaveRequestList({
       await updateRequest(id, status);
       showToast("Success", `Leave request ${status} successfully`);
       setSelectedRequest(null); // Close dialog after action
-    } catch (error) {
-      showToast("Error", "Failed to update leave request status");
+    } catch (error: any) {
+      // Check if it's a department conflict error
+      if (error.message && error.message.includes("department")) {
+        showToast("Error", error.message);
+      } else {
+        showToast("Error", "Failed to update leave request status");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -101,25 +106,77 @@ export function LeaveRequestList({
   };
 
   return (
-    <div className={cn("p-6", className)} {...props}>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Leave Requests
-          </h2>
-          <div className="flex items-center gap-2">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="px-3 py-1.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground text-sm transition-all duration-300"
+    <div className={cn("h-full", className)} {...props}>
+      <div className="h-full">
+        {/* Filter tabs */}
+        <div className="border-b mb-4 pb-2">
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setFilter("all")}
+              className={cn(
+                "pb-2 text-sm font-medium p-2 transition-colors hover:text-primary",
+                filter === "all"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground"
+              )}
             >
-              <option value="all">All Requests</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
+              All Requests
+            </button>
+            <button
+              onClick={() => setFilter("pending")}
+              className={cn(
+                "pb-2 text-sm font-medium p-2 transition-colors hover:text-primary",
+                filter === "pending"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setFilter("approved")}
+              className={cn(
+                "pb-2 text-sm font-medium p-2 transition-colors hover:text-primary",
+                filter === "approved"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              Approved
+            </button>
+            <button
+              onClick={() => setFilter("rejected")}
+              className={cn(
+                "pb-2 text-sm font-medium p-2 transition-colors hover:text-primary",
+                filter === "rejected"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              Rejected
+            </button>
           </div>
         </div>
+
+        {/* Department Policy Notice for Admins and HODs */}
+        {canApproveReject && (
+          <div className="mb-6 p-4 border rounded-lg bg-blue-50 flex items-start gap-3">
+            <div className="text-blue-600 mt-0.5">
+              <AlertCircle size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Department Policy Reminder
+              </h3>
+              <p className="text-sm text-blue-700 mt-1">
+                When approving leave requests, please remember that two
+                employees from the same department cannot have approved leave at
+                the same time or in the same month. The system will prevent
+                approval if there's a conflict.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4">
           {filteredRequests.map((request) => (

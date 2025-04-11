@@ -28,6 +28,11 @@ export function SettingsPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
@@ -119,13 +124,40 @@ export function SettingsPage() {
                   <label className="text-sm font-medium text-foreground">
                     Department
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="department"
                     value={formData.department}
-                    onChange={handleInputChange}
+                    onChange={handleSelectChange}
                     className="w-full p-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300"
-                  />
+                  >
+                    <option value="" className="bg-background text-foreground">
+                      Select your department
+                    </option>
+                    <option
+                      value="Computer Science"
+                      className="bg-background text-foreground"
+                    >
+                      Computer Science
+                    </option>
+                    <option
+                      value="Mass Communication"
+                      className="bg-background text-foreground"
+                    >
+                      Mass Communication
+                    </option>
+                    <option
+                      value="Computer Engineering"
+                      className="bg-background text-foreground"
+                    >
+                      Computer Engineering
+                    </option>
+                    <option
+                      value="Business Administration"
+                      className="bg-background text-foreground"
+                    >
+                      Business Administration
+                    </option>
+                  </select>
                 </div>
                 <div className="pt-4">
                   <button

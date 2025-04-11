@@ -244,10 +244,19 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
       // Fetch leave requests only after successful submission
       await fetchLeaveRequests();
       setError(null);
-    } catch (err) {
-      setError("Failed to submit leave request");
-      console.error(err);
-      throw err;
+    } catch (err: any) {
+      // Handle specific error for department conflicts
+      if (err.response?.status === 409) {
+        const errorMessage =
+          err.response.data.message ||
+          "Department conflict: Another person from your department already has approved leave for this period.";
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      } else {
+        setError("Failed to submit leave request");
+        console.error(err);
+        throw err;
+      }
     } finally {
       setIsLoading(false);
     }
@@ -260,10 +269,19 @@ export function LeaveProvider({ children }: { children: React.ReactNode }) {
       // Fetch leave requests only after successful update
       await fetchLeaveRequests();
       setError(null);
-    } catch (err) {
-      setError("Failed to update leave request");
-      console.error(err);
-      throw err;
+    } catch (err: any) {
+      // Handle specific error for department conflicts
+      if (err.response?.status === 409) {
+        const errorMessage =
+          err.response.data.message ||
+          "Department conflict: Another person from this department already has approved leave for this period.";
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      } else {
+        setError("Failed to update leave request");
+        console.error(err);
+        throw err;
+      }
     } finally {
       setIsLoading(false);
     }

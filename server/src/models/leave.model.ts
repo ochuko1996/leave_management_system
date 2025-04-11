@@ -129,4 +129,84 @@ export class LeaveModel {
       throw new ApiError(500, "Failed to delete leave request");
     }
   }
+
+  /**
+   * Check if there are approved leave requests from the same department during the specified date range or month
+   * @param userId The current user ID requesting leave
+   * @param startDate Leave start date
+   * @param endDate Leave end date
+   * @returns Object containing conflict status and details of overlapping leaves
+   */
+  static async checkDepartmentLeaveConflicts(
+    userId: number,
+    startDate: Date | string,
+    endDate: Date | string
+  ) {
+    try {
+      // First, get the department of the requesting user
+      const [userRow] = await db.execute(
+        `SELECT department FROM users WHERE id = ?`,
+        [userId]
+      );
+      const users = userRow as any[];
+
+      if (users.length === 0) {
+        throw new ApiError(404, "User not found");
+      }
+
+      const userDepartment = users[0].department;
+
+      // Get the month from the start date
+      const startMonth = new Date(startDate).getMonth() + 1; // JavaScript months are 0-indexed
+      const startYear = new Date(startDate).getFullYear();
+
+      // Find any approved leaves from the same department that overlap with the requested period
+      // or are in the same month
+      const [rows] = await db.execute(
+        `SELECT lr.*, u.full_name, u.department, lt.name as leave_type
+         FROM leave_requests lr
+         JOIN users u ON lr.user_id = u.id
+         JOIN leave_types lt ON lr.leave_type_id = lt.id
+         WHERE 
+           u.department = ? 
+           AND u.id != ? 
+           AND lr.status = 'approved'
+           AND (
+             (
+               (lr.start_date BETWEEN ? AND ?) 
+               OR (lr.end_date BETWEEN ? AND ?)
+               OR (? BETWEEN lr.start_date AND lr.end_date)
+               OR (? BETWEEN lr.start_date AND lr.end_date)
+             )
+             OR (
+               MONTH(lr.start_date) = ? 
+               AND YEAR(lr.start_date) = ?
+             )
+           )`,
+        [
+          userDepartment,
+          userId,
+          startDate,
+          endDate,
+          startDate,
+          endDate,
+          startDate,
+          endDate,
+          startMonth,
+          startYear,
+        ]
+      );
+
+      const conflicts = rows as any[];
+
+      return {
+        hasConflict: conflicts.length > 0,
+        conflicts,
+        department: userDepartment,
+      };
+    } catch (error) {
+      console.error("Error checking department leave conflicts:", error);
+      throw new ApiError(500, "Failed to check department leave availability");
+    }
+  }
 }

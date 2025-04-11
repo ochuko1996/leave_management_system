@@ -19,6 +19,23 @@ export class LeaveController {
         throw new ApiError(401, "Unauthorized");
       }
 
+      // Check for department leave conflicts
+      const departmentConflicts =
+        await LeaveModel.checkDepartmentLeaveConflicts(
+          user_id,
+          start_date,
+          end_date
+        );
+
+      // If there are conflicts, reject the leave request
+      if (departmentConflicts.hasConflict) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot approve leave request. Another employee from your department (${departmentConflicts.department}) already has approved leave during this period.`,
+          conflicts: departmentConflicts.conflicts,
+        });
+      }
+
       const leaveRequest = await LeaveModel.create({
         user_id,
         leave_type_id,
@@ -27,6 +44,7 @@ export class LeaveController {
         reason,
         status: "pending",
       });
+
       if (leaveRequest.affectedRows !== 0) {
         return res.status(201).json({
           success: true,
@@ -64,9 +82,9 @@ export class LeaveController {
         leaveRequests = await LeaveModel.findByUserId(user_id!);
       }
 
-      console.log(
-        `Successfully fetched ${leaveRequests.length} leave requests`
-      );
+      // Use optional chaining to safely access length
+      const requestCount = (leaveRequests as any[])?.length || 0;
+      console.log(`Successfully fetched ${requestCount} leave requests`);
 
       return res.status(200).json({
         success: true,
@@ -153,6 +171,26 @@ export class LeaveController {
         role !== "hod"
       ) {
         throw new ApiError(403, "Forbidden");
+      }
+
+      // If approving the leave request, check for department conflicts
+      if (status === "approved" && leaveRequest.status !== "approved") {
+        // Check for department leave conflicts
+        const departmentConflicts =
+          await LeaveModel.checkDepartmentLeaveConflicts(
+            leaveRequest.user_id,
+            leaveRequest.start_date,
+            leaveRequest.end_date
+          );
+
+        // If there are conflicts, reject the approval
+        if (departmentConflicts.hasConflict) {
+          return res.status(409).json({
+            success: false,
+            message: `Cannot approve leave request. Another employee from the same department (${departmentConflicts.department}) already has approved leave during this period.`,
+            conflicts: departmentConflicts.conflicts,
+          });
+        }
       }
 
       const updatedRequest = await LeaveModel.update(parseInt(id), {

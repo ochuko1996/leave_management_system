@@ -62,10 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       // Your register logic here
-      // const response = await authAPI.register(userData)
-      // localStorage.setItem('token', response.token)
-      // localStorage.setItem('user', JSON.stringify(response.user))
-      // setState(prev => ({ ...prev, user: response.user, token: response.token, isAuthenticated: true, isLoading: false }))
+      const response = await authAPI.register(userData);
+      localStorage.setItem("token", response.token as string);
+      localStorage.setItem("user", JSON.stringify(response.user as User));
+      setState((prev) => ({
+        ...prev,
+        user: response.user as User,
+        token: response.token as string,
+        isAuthenticated: true,
+        isLoading: false,
+      }));
     } catch (error) {
       setState((prev) => ({
         ...prev,

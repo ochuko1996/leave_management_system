@@ -132,14 +132,40 @@ export function RegisterPage() {
                 Department
               </label>
               <div className="relative">
-                <input
-                  type="text"
+                <select
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
                   className="w-full px-10 py-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-300"
-                  placeholder="Enter your department"
-                />
+                >
+                  <option value="" className="bg-background text-foreground">
+                    Select your department
+                  </option>
+                  <option
+                    value="Computer Science"
+                    className="bg-background text-foreground"
+                  >
+                    Computer Science
+                  </option>
+                  <option
+                    value="Mass Communication"
+                    className="bg-background text-foreground"
+                  >
+                    Mass Communication
+                  </option>
+                  <option
+                    value="Computer Engineering"
+                    className="bg-background text-foreground"
+                  >
+                    Computer Engineering
+                  </option>
+                  <option
+                    value="Business Administration"
+                    className="bg-background text-foreground"
+                  >
+                    Business Administration
+                  </option>
+                </select>
                 <Building2 className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               </div>
             </div>

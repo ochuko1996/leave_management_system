@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
+import { useAuth } from "@/context/AuthContext";
 interface LeaveRequest {
   id: number;
   leave_type: string;
@@ -76,93 +76,101 @@ export function DashboardPage() {
     if (!leaveRequests || !Array.isArray(leaveRequests)) return 0;
     return leaveRequests.filter((req) => req.status === "pending").length;
   };
-
+  const { user } = useAuth();
   return (
     <div className="min-h-[calc(100vh-2rem)] bg-background rounded-lg p-4 lg:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your leave requests and view statistics
-          </p>
+          {user?.role === "admin" && (
+            <p className="text-sm text-muted-foreground">
+              Manage your leave requests and view statistics
+            </p>
+          )}
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card rounded-lg border p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Annual Leave
-              </h3>
-              <Calendar className="w-4 h-4 text-muted-foreground" />
+        {user?.role === "admin" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-card rounded-lg border p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Annual Leave
+                </h3>
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-semibold text-foreground">
+                {getLeaveBalance("annual")} days
+              </p>
             </div>
-            <p className="text-2xl font-semibold text-foreground">
-              {getLeaveBalance("annual")} days
-            </p>
-          </div>
-          <div className="bg-card rounded-lg border p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Sick Leave
-              </h3>
-              <Clock className="w-4 h-4 text-muted-foreground" />
+            <div className="bg-card rounded-lg border p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Sick Leave
+                </h3>
+                <Clock className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-semibold text-foreground">
+                {getLeaveBalance("sick")} days
+              </p>
             </div>
-            <p className="text-2xl font-semibold text-foreground">
-              {getLeaveBalance("sick")} days
-            </p>
-          </div>
-          <div className="bg-card rounded-lg border p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Pending Requests
-              </h3>
-              <AlertCircle className="w-4 h-4 text-muted-foreground" />
+            <div className="bg-card rounded-lg border p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Pending Requests
+                </h3>
+                <AlertCircle className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-semibold text-foreground">
+                {getPendingRequestsCount()}
+              </p>
             </div>
-            <p className="text-2xl font-semibold text-foreground">
-              {getPendingRequestsCount()}
-            </p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        )}
+        <div
+          className={`grid gap-6 ${
+            user?.role === "admin"
+              ? "grid-cols-1 lg:grid-cols-2"
+              : "max-w-xl mx-auto"
+          }`}
+        >
           {/* Recent Requests */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">
-              Recent Requests
-            </h2>
-            <div className="space-y-3">
-              {recentRequests.length > 0 ? (
-                recentRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="bg-card rounded-lg border p-4 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground">
-                        {request.leave_type}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(request.status)}
-                        <span className="text-sm capitalize text-muted-foreground">
-                          {request.status}
+          {user?.role === "admin" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium text-foreground">
+                Recent Requests
+              </h2>
+              <div className="space-y-3">
+                {recentRequests.length > 0 ? (
+                  recentRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="bg-card rounded-lg border p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">
+                          {request.leave_type}
                         </span>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(request.status)}
+                          <span className="text-sm capitalize text-muted-foreground">
+                            {request.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {format(new Date(request.start_date), "MMM dd, yyyy")} -{" "}
+                        {format(new Date(request.end_date), "MMM dd, yyyy")}
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {format(new Date(request.start_date), "MMM dd, yyyy")} -{" "}
-                      {format(new Date(request.end_date), "MMM dd, yyyy")}
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    No recent leave requests
                   </div>
-                ))
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  No recent leave requests
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-
+          )}
           {/* Leave Request Form */}
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-foreground">New Request</h2>

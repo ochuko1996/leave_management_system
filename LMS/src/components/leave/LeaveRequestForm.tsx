@@ -121,8 +121,13 @@ export function LeaveRequestForm({
       await submitRequest(newRequest);
       showToast("Success", "Leave request submitted successfully");
       navigate("/requests");
-    } catch (error) {
-      showToast("Error", "Failed to submit leave request");
+    } catch (error: any) {
+      // Check if it's a department conflict error
+      if (error.message && error.message.includes("department")) {
+        showToast("Error", error.message);
+      } else {
+        showToast("Error", "Failed to submit leave request");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -163,6 +168,24 @@ export function LeaveRequestForm({
             </h2>
             <p className="text-sm text-muted-foreground">
               Submit a new leave request
+            </p>
+          </div>
+        </div>
+
+        {/* Department Policy Notice */}
+        <div className="mb-6 p-4 border rounded-lg bg-yellow-50 flex items-start gap-3">
+          <div className="text-amber-600 mt-0.5">
+            <AlertCircle size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-amber-800">
+              Department Policy
+            </h3>
+            <p className="text-sm text-amber-700 mt-1">
+              Please note that two employees from the same department cannot
+              have approved leave at the same time or in the same month. Your
+              request may be rejected if it conflicts with an already approved
+              leave.
             </p>
           </div>
         </div>
@@ -225,7 +248,7 @@ export function LeaveRequestForm({
                       )}
                       required
                     />
-                    <Calendar className="absolute right-2 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Calendar className="absolute right-2 top-2.5 h-5 w-5 text-foreground" />
                   </div>
                   {errors.startDate && (
                     <div className="text-xs text-destructive flex items-center gap-1 mt-1">
